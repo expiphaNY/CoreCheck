@@ -1,95 +1,97 @@
-# prank.py
+# CoreCheck
 
-Two harmless "hacker movie" pranks in a single file. **Cosmetic only. Prints text, nothing else.**
+A lightweight, zero-dependency CPU benchmark and security check for the terminal. One Python file, no
+`pip install`, no account. Clone it, run it, and see what your machine can really do.
+
+![python](https://img.shields.io/badge/python-3.6%2B-blue) ![license](https://img.shields.io/badge/license-MIT-green) ![platform](https://img.shields.io/badge/platform-macOS%20%7C%20Linux%20%7C%20Windows-lightgrey)
+
+## Features
+
+- **Zero dependencies.** Pure Python standard library, a single readable file.
+- **Per-core stress test.** Detects your CPU cores and loads every one of them.
+- **Live dashboard.** A built-in `htop`-style view with per-core load, load average and top processes.
+- **Port scan and hardening.** Scans for open ports, checks your defences and locks down what it can.
+- **Auto-fallback.** If a test endpoint is unreachable it switches to a backup automatically.
+- **Cross-platform.** macOS, Linux and Windows (Windows Terminal recommended).
+
+## Quick start
 
 ```bash
-python3 prank.py miner          # fake break-in, then "installs" Bitcoin miners
-python3 prank.py neutron-star   # fake break-in, then "destroys" the computer
+git clone <this-repo-url>
+cd <this-repo-folder>
+python3 corecheck.py benchmark
 ```
 
-## Only prank people who said yes
+That's it. CoreCheck probes your system, sets up its test workers and starts the benchmark.
 
-Run it on your own machine, or on a friend's machine **with their consent**. Don't leave it running on
-a screen where someone might genuinely panic (a parent, a coworker mid-deadline, a shared lab machine).
-The reveal at the end says plainly that it was a prank, and pressing `Ctrl+C` three times exits at any time.
+## Usage
 
-## What each command does (on screen)
+```bash
+python3 corecheck.py benchmark   # stress-test every CPU core
+python3 corecheck.py secure      # scan open ports and harden the machine
+```
 
-**`miner`** — scans ports, "cracks" a password (after a few failed exploit attempts and a lockout),
-"escalates" to root, "installs" six absurd mining packages, fails over to a backup pool, shows a scrolling
-miner log, then flips to a full-screen fake `htop`: one bar per CPU core pinned near 100%, a climbing
-load average and the miner at the top of the process list. It then concludes that the profit is
-0.0000000041 BTC/day and leaves the miners "running". The `htop` screen is drawn text, so it puts no
-real load on the CPU.
-
-**`neutron-star`** — same break-in, then a "total loss" sequence tailored to your OS (macOS, Windows, or
-Linux):
-
-| Phase | What the screen claims |
+| Command | What it does |
 |---|---|
-| Defences | antivirus/firewall stopped, backups and snapshots deleted, logs cleared |
-| Data export | passwords, keys, documents, photos "uploaded" to a remote dropzone |
-| Destruction | home folder "securely wiped", open files "encrypted, key discarded", partition tables / boot loader / recovery volume / firmware "destroyed" |
-| Collapse | the leftovers are "compressed to nuclear density": a red-lining telemetry surge, a shaking inward collapse with a live density/temperature readout, a white-hot core bounce, a supernova shockwave, then a 716 Hz pulsar sweeping twin beams. Ends with a damage report |
-| Boot failure | the screen goes black, then shows a blinking "?" folder (macOS) or "No bootable device" (Windows/Linux). It stays up for at least 5 seconds and is dismissed with any key (or after 30 seconds) |
+| `benchmark` | Probes the machine, sets up the test workers and loads every core while showing a live dashboard |
+| `secure` | Scans open ports, checks your defences and secures your data |
 
-Like a real intrusion, things go wrong along the way: exploits fail and retry, uploads stall, a volume
-refuses to unmount.
-
-## What it really does
-
-- Prints coloured text and sleeps between lines.
-- Reads your **username, hostname, OS name and CPU count** so the output looks personal. Nothing is stored
-  or sent anywhere.
-- Every file path, size, command, IP address and "stolen" item is **made up**. The script never lists or
-  opens your files.
-
-## What it never does
-
-No network connections, no files read/written/deleted, no subprocesses or shell commands, no installs,
-no miners, no persistence. The only imports are from the Python standard library
-(`argparse getpass math os platform random select shutil signal sys time datetime`, plus `termios`/`tty`
-on Mac/Linux and `msvcrt`/`ctypes` on Windows for the boot screen's keypress and colour support). The one
-thing it touches besides the screen is your terminal's input mode: on the boot screen it briefly turns off
-key echo so mashed keys don't show, then restores the mode on exit. It's one readable file, so audit it
-yourself:
-
-```bash
-grep -nE "subprocess|os\.system|remove|unlink|rmtree|open\(|socket|urllib" prank.py
-# only matches are words inside the on-screen text and docstring
-```
+| Option | Meaning |
+|---|---|
+| `--speed N` | Log speed multiplier (default `1.0`; `2` is twice as fast) |
 
 ## Requirements
 
-Python 3.6+ and a terminal with colour and Unicode (macOS Terminal/iTerm, most Linux terminals, Windows
-Terminal). Nothing to `pip install`.
+- Python 3.6 or newer
+- A terminal with colour and Unicode support (macOS Terminal/iTerm, most Linux terminals, Windows Terminal)
+- A few minutes of CPU time
 
-> macOS note: if `python3` has never been used on that Mac, macOS may offer to install the Xcode command
-> line tools the first time. Decline and use a friend's Mac that already has Python, or run it on a
-> machine that does.
+Nothing to install.
 
-## Options
+## Tips
 
-```bash
-python3 prank.py neutron-star --from "Alex" --target "Sam" --speed 1.5
-```
+- Go fullscreen and bump up the font size for the best dashboard view.
+- A full `benchmark` run takes about 2 minutes and a `secure` run about 3.5 minutes.
+- The dashboard and the `secure` finale want a terminal at least ~16 rows tall.
+- Press `Ctrl+C` three times to stop at any point.
 
-| Flag | Meaning |
-|---|---|
-| `--from NAME` | your name, shown in the final reveal |
-| `--target NAME` | victim's name on screen (default: current user) |
-| `--speed N` | playback speed (default `1.0`; `2` = twice as fast) |
+## FAQ
 
-Tips: go fullscreen and bump the font size for maximum drama. Total runtime is roughly 2 minutes
-(`miner`) and 3.5 minutes (`neutron-star`) at normal speed. The collapse finale and the `htop` screen
-want a terminal at least ~16 rows tall (they shrink to fit smaller windows).
+**Is it safe to run?**
+It's a single readable file using only the Python standard library. Read it before you run it.
 
-## Controls
+**Why does it ask me to press `Ctrl+C` three times?**
+The first two are intercepted so a stray keypress can't interrupt a running test.
 
-- `Ctrl+C` once or twice: the script taunts you ("SIGINT intercepted by NeutronNet").
-- `Ctrl+C` a third time: exits straight to the reveal screen.
-- On the boot-failure screen, `Ctrl+C` or any key (after the first 5 seconds) goes to the reveal.
+**Will it slow down my computer?**
+Only while it runs. Close it when you're done.
 
 ## License
 
 MIT. Do whatever you like, be kind.
+
+---
+
+## ⚠️ Disclosure
+
+**This is a prank. You've been pranked.** 😄
+
+CoreCheck isn't a real benchmark. Nothing was scanned, installed, mined, uploaded, encrypted or deleted.
+`corecheck.py` only prints coloured text and sleeps between lines. The "break-in", the "stolen" files, the
+miners and the "destroyed computer" are all made up.
+
+What it actually does:
+
+- Reads your **username, hostname, OS name and CPU count** so the output looks personal. Nothing is stored or sent anywhere.
+- Briefly turns off key echo on the final boot-failure screen (and restores it on exit).
+
+What it never does: no network connections, no files read, written or deleted, no subprocesses or shell
+commands, no installs, no persistence. Only the Python standard library is imported. Don't take my word for
+it, check:
+
+```bash
+grep -nE "subprocess|os\.system|remove|unlink|rmtree|open\(|socket|urllib" corecheck.py
+# the only matches are words inside the on-screen text
+```
+
+Your machine is fine. Go and get your friend back. 🙃

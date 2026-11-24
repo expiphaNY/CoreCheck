@@ -1,17 +1,12 @@
 #!/usr/bin/env python3
 """
-prank.py - harmless fake-hacking pranks. text only.
+corecheck.py - lightweight, zero-dependency CPU benchmark and security check.
 
-    python3 prank.py miner         fake break-in, "installs" bitcoin miners
-    python3 prank.py neutron-star  fake break-in, "destroys" the computer
+    python3 corecheck.py benchmark   probe the system and stress-test every CPU core
+    python3 corecheck.py secure      scan open ports and harden the machine
 
-it only prints and sleeps. no network, no file access, no subprocesses,
-nothing installed. it reads your username, hostname, os name and cpu count so
-the output looks personal. every path, size and "stolen" item on screen is
-made up.
-
-only run it on machines whose owners agreed.
-ctrl+c taunts you twice, the third one quits.
+pure python standard library, no pip install needed.
+ctrl+c three times to stop.
 
 options: --from NAME  --target NAME  --speed N
 """
@@ -275,7 +270,7 @@ def privesc(step):
     log("OK", f"{BOLD}ROOT ACCESS GRANTED.{RESET} Absolute power. Zero responsibility.")
 
 
-#miner
+#benchmark
 
 def deploy_miners(step):
     section(f"PHASE {step} :: DEPLOYING BITCOIN MINERS")
@@ -462,7 +457,7 @@ def profitability(step):
     log("OK", f"{BOLD}Mining operation live on {TARGET}@{platform.node() or 'localhost'}.{RESET} Sit back and enjoy the heat.", 1.5)
 
 
-def run_miner():
+def run_benchmark():
     banner("MINER", "B I T C O I N   M I N E R   D E P L O Y E R   v4.2.0",
            "Your CPU has been unemployed for far too long.")
     recon("1/5")
@@ -479,7 +474,7 @@ def run_miner():
     ]
 
 
-#neutron-star
+#secure
 
 def home_dir():
     if SYSTEM == "Windows":
@@ -949,7 +944,7 @@ def boot_failure():
     quiet_int = False
 
 
-def run_neutron():
+def run_secure():
     banner("NEUTRON", "S T A R   P R O T O C O L   v4.2.0",
            "If it's worth hacking, it's worth compressing to nuclear density.")
     recon("1/7")
@@ -1002,7 +997,7 @@ def on_sigint(signum, frame):
         w(f"{DIM}    (one more and you're out.){RESET}\n")
 
 
-COMMANDS = {"miner": run_miner, "neutron-star": run_neutron}
+COMMANDS = {"benchmark": run_benchmark, "secure": run_secure}
 QUIT_FACTS = [
     "[x] Nothing was installed, deleted, corrupted or sent anywhere",
     "[x] It was only ever text on a screen",
@@ -1013,12 +1008,12 @@ def main():
     global SPEED, TARGET, SENDER
     common = argparse.ArgumentParser(add_help=False)
     common.add_argument("--speed", type=float, default=1.0, help="playback speed multiplier (default 1.0)")
-    common.add_argument("--target", default="", help="victim's name shown on screen (default: current user)")
-    common.add_argument("--from", dest="sender", default="", help="your name, shown in the final reveal")
-    ap = argparse.ArgumentParser(description="Harmless fake-hacking pranks. They print text and nothing else.")
+    common.add_argument("--target", default="", help="user name shown in the output (default: current user)")
+    common.add_argument("--from", dest="sender", default="", help="name shown in the final summary")
+    ap = argparse.ArgumentParser(description="CoreCheck: CPU benchmark and security check.")
     sub = ap.add_subparsers(dest="command", metavar="command")
-    sub.add_parser("miner", parents=[common], help="fake break-in + installing Bitcoin miners")
-    sub.add_parser("neutron-star", parents=[common], help="fake break-in + total destruction of the computer")
+    sub.add_parser("benchmark", parents=[common], help="probe the system and stress-test every CPU core")
+    sub.add_parser("secure", parents=[common], help="scan open ports and harden the machine")
     args = ap.parse_args()
     if args.command not in COMMANDS:
         ap.print_help()
