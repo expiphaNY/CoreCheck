@@ -11,7 +11,7 @@ the output looks personal. every path, size and "stolen" item on screen is
 made up.
 
 only run it on machines whose owners agreed.
-ctrl+c once taunts, twice quits.
+ctrl+c taunts you twice, the third one quits.
 
 options: --from NAME  --target NAME  --speed N
 """
@@ -185,7 +185,7 @@ def banner(word, subtitle, tagline):
     say(f"{BOLD}{BCYAN}  [ {subtitle} ]{RESET}   {DIM}build 7f3a9c1 (stable-ish){RESET}", 0.3)
     say(f"{DIM}  \"{tagline}\"{RESET}", 0.8)
     say()
-    log("INFO", "Booting NeutronShield™ stealth layer ...", 0.3)
+    log("INFO", "Booting NeutronNet™ stealth layer ...", 0.3)
     log("OK", "Stealth layer online. Antivirus is, statistically, asleep.")
     log("WARN", "Ethics module not found. Continuing anyway.")
     hexdump(4)
@@ -992,10 +992,14 @@ def reveal(completed, facts):
 def on_sigint(signum, frame):
     global interrupts
     interrupts += 1
-    if quiet_int or interrupts > 1:
+    if quiet_int or interrupts >= 3:
         raise KeyboardInterrupt
-    w(f"\n{BOLD}{BRED}[!] SIGINT intercepted by NeutronShield™. Nice try.{RESET}\n")
-    w(f"{DIM}    (Ctrl+C again to quit. It's only a prank.){RESET}\n")
+    if interrupts == 1:
+        w(f"\n{BOLD}{BRED}[!] SIGINT intercepted by NeutronNet. Nice try.{RESET}\n")
+        w(f"{DIM}    (Ctrl+C 2 more times to quit. It's only a prank.){RESET}\n")
+    else:
+        w(f"\n{BOLD}{BRED}[!] SIGINT intercepted again. NeutronNet is not amused.{RESET}\n")
+        w(f"{DIM}    (one more and you're out.){RESET}\n")
 
 
 COMMANDS = {"miner": run_miner, "neutron-star": run_neutron}

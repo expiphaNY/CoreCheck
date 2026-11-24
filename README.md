@@ -11,7 +11,7 @@ python3 prank.py neutron-star   # fake break-in, then "destroys" the computer
 
 Run it on your own machine, or on a friend's machine **with their consent**. Don't leave it running on
 a screen where someone might genuinely panic (a parent, a coworker mid-deadline, a shared lab machine).
-The reveal at the end says plainly that it was a prank, and `Ctrl+C` twice exits at any time.
+The reveal at the end says plainly that it was a prank, and pressing `Ctrl+C` three times exits at any time.
 
 ## What each command does (on screen)
 
@@ -86,8 +86,8 @@ want a terminal at least ~16 rows tall (they shrink to fit smaller windows).
 
 ## Controls
 
-- `Ctrl+C` once: the script taunts you ("SIGINT intercepted by NeutronShield™").
-- `Ctrl+C` twice: exits straight to the reveal screen.
+- `Ctrl+C` once or twice: the script taunts you ("SIGINT intercepted by NeutronNet").
+- `Ctrl+C` a third time: exits straight to the reveal screen.
 - On the boot-failure screen, `Ctrl+C` or any key (after the first 5 seconds) goes to the reveal.
 
 ## License
