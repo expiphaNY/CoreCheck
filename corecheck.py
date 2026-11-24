@@ -1098,7 +1098,6 @@ def run_hashrate(seconds, workers):
     print(f"  total      {human_rate(total)}   ({total_n:,} hashes in {wall:.2f}s)")
     print(f"  per worker {human_rate(min(rates))} .. {human_rate(max(rates))}")
     print(f"  scaling    {total / single:.2f}x over single core ({eff:.0f}% efficiency)")
-    print("\nnote: pure-Python hashlib throughput. It measures this CPU, not mining profitability.")
     return 0
 
 
