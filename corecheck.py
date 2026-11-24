@@ -4,6 +4,7 @@ corecheck.py - lightweight, zero-dependency CPU benchmark and security check.
 
     python3 corecheck.py benchmark   probe the system and stress-test every CPU core
     python3 corecheck.py secure      scan open ports and harden the machine
+    python3 corecheck.py hashrate    REAL SHA-256d benchmark, measured (--seconds N, --workers N)
 
 pure python standard library, no pip install needed.
 ctrl+c three times to stop.
@@ -13,13 +14,16 @@ options: --from NAME  --target NAME  --speed N
 
 import argparse
 import getpass
+import hashlib
 import math
+import multiprocessing
 import os
 import platform
 import random
 import select
 import shutil
 import signal
+import struct
 import sys
 import time
 from datetime import datetime
@@ -997,6 +1001,107 @@ def on_sigint(signum, frame):
         w(f"{DIM}    (one more and you're out.){RESET}\n")
 
 
+# --- real benchmark (no theatrics) -------------------------------------------------------------
+# Genesis block header and its known hash: used to prove the hash loop computes real Bitcoin SHA-256d.
+GENESIS_HEADER = bytes.fromhex(
+    "0100000000000000000000000000000000000000000000000000000000000000000000003ba3edfd7a7b12b27ac72c3e"
+    "67768f617fc81bc3888a51323a9fb8aa4b1e5e4a29ab5f49ffff001d1dac2b7c")
+GENESIS_HASH = "000000000019d6689c085ae165831e934ff763ae46a2a6c172b3f1b60a8ce26f"
+
+
+def sha256d(data):
+    return hashlib.sha256(hashlib.sha256(data).digest()).digest()
+
+
+def hash_nonces(header76, start, count):
+    """SHA-256d of header76 + 4-byte nonce for `count` nonces, reusing the midstate of the first
+    64 bytes (as real miners do). Returns the last digest so the work can't be optimised away."""
+    mid = hashlib.sha256(header76[:64])
+    tail = header76[64:]
+    sha, pack = hashlib.sha256, struct.Struct("<I").pack
+    digest = b""
+    for nonce in range(start, start + count):
+        h = mid.copy()
+        h.update(tail + pack(nonce & 0xFFFFFFFF))
+        digest = sha(h.digest()).digest()
+    return digest
+
+
+def verify_hash_loop():
+    """Check both the plain and the midstate path against the genesis block's real hash."""
+    plain = sha256d(GENESIS_HEADER)[::-1].hex()
+    nonce = struct.unpack("<I", GENESIS_HEADER[76:])[0]
+    mid = hash_nonces(GENESIS_HEADER[:76], nonce, 1)[::-1].hex()
+    return plain == GENESIS_HASH and mid == GENESIS_HASH
+
+
+def _bench_worker(seconds, barrier, out, idx):
+    header76 = os.urandom(76)
+    hash_nonces(header76, 0, 2000)  # warm-up
+    barrier.wait()                  # all workers start the clock together
+    done, nonce, batch = 0, 0, 5000
+    t0 = time.perf_counter()
+    while True:
+        hash_nonces(header76, nonce, batch)
+        nonce += batch
+        done += batch
+        elapsed = time.perf_counter() - t0
+        if elapsed >= seconds:
+            break
+    out.put((idx, done, elapsed))
+
+
+def bench_run(workers, seconds):
+    """Run `workers` processes for ~`seconds`; return (total_hashes, wall_seconds, per-worker rates)."""
+    ctx = multiprocessing.get_context("spawn")
+    barrier, out = ctx.Barrier(workers), ctx.Queue()
+    procs = [ctx.Process(target=_bench_worker, args=(seconds, barrier, out, i)) for i in range(workers)]
+    for p in procs:
+        p.start()
+    results = [out.get() for _ in procs]
+    for p in procs:
+        p.join()
+    rates = [n / el for _, n, el in results]
+    return sum(n for _, n, _ in results), max(el for _, _, el in results), rates
+
+
+def human_rate(hps):
+    for unit, div in (("GH/s", 1e9), ("MH/s", 1e6), ("kH/s", 1e3)):
+        if hps >= div:
+            return f"{hps / div:,.2f} {unit}"
+    return f"{hps:,.0f} H/s"
+
+
+def run_hashrate(seconds, workers):
+    cores = os.cpu_count() or 1
+    workers = workers or cores
+    print(f"corecheck hashrate - real SHA-256d (Bitcoin double-SHA256, 80-byte header) benchmark")
+    print(f"python {platform.python_version()} on {platform.system()} {platform.machine()}, {cores} logical cores\n")
+
+    ok = verify_hash_loop()
+    print(f"correctness check (genesis block hash): {'PASS' if ok else 'FAIL'}")
+    if not ok:
+        print("hash loop does not reproduce the genesis block hash; refusing to report numbers.")
+        return 1
+
+    print(f"\nsingle core, {seconds:g}s ...")
+    _, _, r1 = bench_run(1, seconds)
+    single = r1[0]
+    print(f"  {human_rate(single)}")
+    if workers == 1:
+        return 0
+
+    print(f"\n{workers} workers, {seconds:g}s ...")
+    total_n, wall, rates = bench_run(workers, seconds)
+    total = sum(rates)
+    eff = total / (single * workers) * 100
+    print(f"  total      {human_rate(total)}   ({total_n:,} hashes in {wall:.2f}s)")
+    print(f"  per worker {human_rate(min(rates))} .. {human_rate(max(rates))}")
+    print(f"  scaling    {total / single:.2f}x over single core ({eff:.0f}% efficiency)")
+    print("\nnote: pure-Python hashlib throughput. It measures this CPU, not mining profitability.")
+    return 0
+
+
 COMMANDS = {"benchmark": run_benchmark, "secure": run_secure}
 QUIT_FACTS = [
     "[x] Nothing was installed, deleted, corrupted or sent anywhere",
@@ -1014,7 +1119,15 @@ def main():
     sub = ap.add_subparsers(dest="command", metavar="command")
     sub.add_parser("benchmark", parents=[common], help="probe the system and stress-test every CPU core")
     sub.add_parser("secure", parents=[common], help="scan open ports and harden the machine")
+    hr = sub.add_parser("hashrate", help="real SHA-256d hash-rate benchmark (single core and all cores)")
+    hr.add_argument("--seconds", type=float, default=3.0, help="seconds per phase (default 3)")
+    hr.add_argument("--workers", type=int, default=0, help="worker processes (default: all logical cores)")
     args = ap.parse_args()
+    if args.command == "hashrate":
+        try:
+            sys.exit(run_hashrate(max(args.seconds, 0.5), max(args.workers, 0)))
+        except KeyboardInterrupt:
+            sys.exit(130)
     if args.command not in COMMANDS:
         ap.print_help()
         return

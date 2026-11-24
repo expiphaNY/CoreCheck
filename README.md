@@ -36,6 +36,19 @@ python3 corecheck.py secure      # scan open ports and harden the machine
 | `benchmark` | Probes the machine, sets up the test workers and loads every core while showing a live dashboard |
 | `secure` | Scans open ports, checks your defences and secures your data |
 
+### Real benchmark: `hashrate`
+
+```bash
+python3 corecheck.py hashrate                  # ~6 seconds: 1 core, then all cores
+python3 corecheck.py hashrate --seconds 10 --workers 4
+```
+
+This one is genuinely measured, not a show. It computes Bitcoin-style double SHA-256 over an 80-byte
+block header (with midstate reuse, like a real miner), first on one core and then on all of them, and
+reports hashes/second plus multi-core scaling. Before timing anything it checks that the loop reproduces
+the real Bitcoin genesis block hash, and refuses to print numbers if it doesn't. It is pure-Python
+`hashlib` throughput: a fair CPU comparison, not a statement about mining profitability.
+
 | Option | Meaning |
 |---|---|
 | `--speed N` | Log speed multiplier (default `1.0`; `2` is twice as fast) |
