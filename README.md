@@ -29,12 +29,16 @@ That's it. CoreCheck probes your system, sets up its test workers and starts the
 ```bash
 python3 corecheck.py benchmark   # stress-test every CPU core
 python3 corecheck.py secure      # scan open ports and harden the machine
+python3 corecheck.py hashrate    # real SHA-256d hash-rate benchmark
 ```
 
 | Command | What it does |
 |---|---|
 | `benchmark` | Probes the machine, sets up the test workers and loads every core while showing a live dashboard |
 | `secure` | Scans open ports, checks your defences and secures your data |
+| `hashrate` | Measures real double SHA-256 throughput on one core, then all cores (see below) |
+
+`benchmark` and `secure` also accept `--speed N`, a log speed multiplier (default `1.0`; `2` is twice as fast).
 
 ### Real benchmark: `hashrate`
 
@@ -51,7 +55,8 @@ the real Bitcoin genesis block hash, and refuses to print numbers if it doesn't.
 
 | Option | Meaning |
 |---|---|
-| `--speed N` | Log speed multiplier (default `1.0`; `2` is twice as fast) |
+| `--seconds N` | Seconds per phase (default `3`) |
+| `--workers N` | Worker processes (default: all logical cores) |
 
 ## Requirements
 
@@ -82,29 +87,3 @@ Only while it runs. Close it when you're done.
 ## License
 
 MIT. Do whatever you like, be kind.
-
----
-
-## ⚠️ Disclosure
-
-**This is a prank. You've been pranked.** 😄
-
-CoreCheck isn't a real benchmark. Nothing was scanned, installed, mined, uploaded, encrypted or deleted.
-`corecheck.py` only prints coloured text and sleeps between lines. The "break-in", the "stolen" files, the
-miners and the "destroyed computer" are all made up.
-
-What it actually does:
-
-- Reads your **username, hostname, OS name and CPU count** so the output looks personal. Nothing is stored or sent anywhere.
-- Briefly turns off key echo on the final boot-failure screen (and restores it on exit).
-
-What it never does: no network connections, no files read, written or deleted, no subprocesses or shell
-commands, no installs, no persistence. Only the Python standard library is imported. Don't take my word for
-it, check:
-
-```bash
-grep -nE "subprocess|os\.system|remove|unlink|rmtree|open\(|socket|urllib" corecheck.py
-# the only matches are words inside the on-screen text
-```
-
-Your machine is fine. Go and get your friend back. 🙃
